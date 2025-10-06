@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Aether Tech Progress Tracker</title>
+<style>
+  body {
+    font-family: Poppins, sans-serif;
+    background:#0d1117; color:#fff;
+    margin:0; padding:2rem;
+    display:flex; flex-direction:column; align-items:center;
+  }
+  h1 {color:#00e0ff; margin-bottom:0.5rem;}
+  #streak {font-size:1.1rem; margin-bottom:1.5rem; color:#00ffaa;}
+  #goalBarContainer {
+    width:90%; max-width:600px; height:25px;
+    background:#333; border-radius:12px;
+    overflow:hidden; margin-bottom:2rem;
+  }
+  #goalBar {
+    height:100%; width:0%;
+    background:#00e0ff; transition:width .3s ease;
+  }
+  .task {
+    display:flex; justify-content:space-between;
+    background:#1a1f25; width:90%; max-width:600px;
+    padding:.7rem 1rem; border-radius:8px; margin-bottom:.5rem;
+  }
+  .done {text-decoration:line-through; opacity:.6;}
+  button {
+    cursor:pointer; border:none; border-radius:6px;
+    padding:.5rem .9rem; background:#00e0ff;
+    color:#000; font-weight:600;
+  }
+  input {
+    padding:.5rem; border-radius:6px; border:none;
+    outline:none; width:70%; max-width:400px;
+  }
+</style>
+</head>
+<body>
+  <h1>Aether Tech Progress</h1>
+  <div id="streak">Current Streak: 0 🔥</div>
+
+  <div id="goalBarContainer"><div id="goalBar"></div></div>
+
+  <div style="margin-bottom:1rem;">
+    <input id="taskInput" placeholder="Add new task..." />
+    <button id="addBtn">Add</button>
+  </div>
+
+  <div id="taskList"></div>
+
+<script>
+const taskInput = document.getElementById("taskInput");
+const addBtn = document.getElementById("addBtn");
+const taskList = document.getElementById("taskList");
+const goalBar = document.getElementById("goalBar");
+const streakDisplay = document.getElementById("streak");
+
+let tasks = JSON.parse(localStorage.getItem("tasks") || "[]");
+let streak = parseInt(localStorage.getItem("streak") || "0");
+let lastCompletedDate = localStorage.getItem("lastCompletedDate") || null;
+
+function render() {
+  taskList.innerHTML = "";
+  tasks.forEach((t, i) => {
+    const div = document.createElement("div");
+    div.className = "task" + (t.done ? " done" : "");
+    div.innerHTML = `
+      <span>${t.name}</span>
+      <div>
+        <button onclick="toggle(${i})">${t.done ? "Undo" : "Done"}</button>
+        <button onclick="removeTask(${i})">✕</button>
+      </div>`;
+    taskList.appendChild(div);
+  });
+  updateBar();
+  localStorage.setItem("tasks", JSON.stringify(tasks));
+  updateStreakDisplay();
+}
+
+function addTask() {
+  const name = taskInput.value.trim();
+  if (!name) return;
+  tasks.push({name, done:false});
+  taskInput.value = "";
+  render();
+}
+
+function toggle(i) {
+  tasks[i].done = !tasks[i].done;
+  if (tasks[i].done) checkStreak();
+  render();
+}
+
+function removeTask(i) {
+  tasks.splice(i,1);
+  render();
+}
+
+function updateBar() {
+  const done = tasks.filter(t=>t.done).length;
+  const percent = tasks.length ? Math.round((done/tasks.length)*100) : 0;
+  goalBar.style.width = percent + "%";
+}
+
+function todayString() {
+  const d = new Date();
+  return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate();
+}
+
+function checkStreak() {
+  const today = todayString();
+  if (lastCompletedDate === today) return; // already counted today
+  const last = new Date(lastCompletedDate);
+  const yesterday = new Date(); yesterday.setDate(yesterday.getDate()-1);
+
+  if (lastCompletedDate && last.toDateString() === yesterday.toDateString()) {
+    streak++;
+  } else {
+    streak = 1;
+  }
+
+  lastCompletedDate = today;
+  localStorage.setItem("streak", streak);
+  localStorage.setItem("lastCompletedDate", lastCompletedDate);
+}
+
+function updateStreakDisplay() {
+  streakDisplay.textContent = `Current Streak: ${streak} 🔥`;
+}
+
+addBtn.onclick = addTask;
+taskInput.addEventListener("keydown", e=>{ if(e.key==="Enter") addTask(); });
+
+render();
+</script>
+</body>
+</html>
